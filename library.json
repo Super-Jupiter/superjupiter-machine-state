@@ -1,0 +1,49 @@
+{
+  "name": "SuperJupiterMachineState",
+  "version": "0.1.0",
+  "description": "Persistent equipment states and observed runtime from scalar signals. Portable C++11 by SuperJupiter. Hardware validation pending.",
+  "keywords": [
+    "sensor",
+    "embedded",
+    "esp32",
+    "arduino",
+    "machine-state"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Super-Jupiter/superjupiter-machine-state.git"
+  },
+  "homepage": "https://github.com/Super-Jupiter/superjupiter-machine-state",
+  "authors": [
+    {
+      "name": "SuperJupiter",
+      "url": "https://www.superjupiter.net",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": [
+    "SuperJupiterMachineState.h"
+  ],
+  "export": {
+    "include": [
+      "src/*",
+      "examples/*",
+      "docs/*",
+      "tests/*",
+      "tools/*",
+      "README.md",
+      "LICENSE",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "SECURITY.md",
+      "CMakeLists.txt",
+      "library.json",
+      "library.properties",
+      "cmake/*",
+      "extras/*"
+    ]
+  }
+}
