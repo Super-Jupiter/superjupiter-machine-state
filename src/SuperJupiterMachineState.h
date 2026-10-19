@@ -2,40 +2,39 @@
 // Copyright (c) 2026 SuperJupiter
 #ifndef SUPERJUPITER_MACHINE_STATE_H
 #define SUPERJUPITER_MACHINE_STATE_H
-#if defined(__FAST_MATH__) || (defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__ > 0)
+#if defined(__FAST_MATH__) ||                                                  \
+    (defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__ > 0)
 #error "SuperJupiter requires IEEE non-finite checks; disable fast-math"
 #endif
 #include <float.h>
-#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
-#define SUPERJUPITER_MACHINE_STATE_VERSION "0.1.0"
+#define SUPERJUPITER_MACHINE_STATE_VERSION "0.1.1"
 namespace superjupiter {
 namespace machine_state {
 
 namespace detail {
-inline bool finite(double value) { return value == value && value >= -DBL_MAX && value <= DBL_MAX; }
-inline double oneMinusExpNegative(double ratio) {
-  // Stable at small elapsed/tau without requiring AVR's unavailable expm1.
-  if (ratio < 0.01) {
-    double term = ratio, total = ratio;
-    for (unsigned n = 2; n <= 12; ++n) {
-      term *= -ratio / n;
-      total += term;
-    }
-    return total;
-  }
-  return 1 - ::exp(-ratio);
+inline bool finite(double value) {
+  return value == value && value >= -DBL_MAX && value <= DBL_MAX;
 }
 } // namespace detail
 
 enum class State { Unknown, Stopped, Idle, Running };
-enum class Status { Ok, Gap, InvalidInput, InvalidTime, InvalidConfig, Overflow };
+enum class Status {
+  Ok,
+  Gap,
+  InvalidInput,
+  InvalidTime,
+  InvalidConfig,
+  Overflow
+};
 struct Config {
   double stoppedThreshold, runningThreshold;
   uint32_t settleMs, maxGapMs;
-  Config(double s = 1, double r = 10, uint32_t settle = 1000, uint32_t gap = 10000)
-      : stoppedThreshold(s), runningThreshold(r), settleMs(settle), maxGapMs(gap) {}
+  Config(double s = 1, double r = 10, uint32_t settle = 1000,
+         uint32_t gap = 10000)
+      : stoppedThreshold(s), runningThreshold(r), settleMs(settle),
+        maxGapMs(gap) {}
 };
 struct Result {
   Status status;
@@ -51,21 +50,29 @@ class MachineState {
 
 public:
   explicit MachineState(Config c = Config())
-      : c_(c), state_(State::Unknown), candidate_(State::Unknown), timed_(false), last_(0),
-        since_(0), durations_{} {}
+      : c_(c), state_(State::Unknown), candidate_(State::Unknown),
+        timed_(false), last_(0), since_(0), durations_{} {}
   uint64_t durationMs(State state) const {
     const unsigned i = static_cast<unsigned>(state);
     return i < 4 ? durations_[i] : 0;
   }
   Result push(double activity, uint32_t atMs) {
-    if (!detail::finite(c_.stoppedThreshold) || !detail::finite(c_.runningThreshold) ||
-        c_.stoppedThreshold >= c_.runningThreshold || c_.settleMs >= 0x80000000UL || !c_.maxGapMs ||
+    if (!detail::finite(c_.stoppedThreshold) ||
+        !detail::finite(c_.runningThreshold) ||
+        c_.stoppedThreshold >= c_.runningThreshold ||
+        c_.settleMs >= 0x80000000UL || !c_.maxGapMs ||
         c_.maxGapMs >= 0x80000000UL)
       return Result{Status::InvalidConfig, state_, false};
     const State before = state_;
+    if (timed_) {
+      const uint32_t dt = atMs - last_;
+      if (!dt || dt >= 0x80000000UL)
+        return Result{Status::InvalidTime, state_, false};
+    }
     if (!detail::finite(activity)) {
       state_ = candidate_ = State::Unknown;
-      timed_ = false;
+      timed_ = true;
+      last_ = atMs;
       return Result{Status::InvalidInput, state_, state_ != before};
     }
     Status status = Status::Ok;
@@ -85,9 +92,10 @@ public:
     }
     timed_ = true;
     last_ = atMs;
-    const State wanted = activity <= c_.stoppedThreshold
-                             ? State::Stopped
-                             : (activity >= c_.runningThreshold ? State::Running : State::Idle);
+    const State wanted =
+        activity <= c_.stoppedThreshold
+            ? State::Stopped
+            : (activity >= c_.runningThreshold ? State::Running : State::Idle);
     if (candidate_ != wanted) {
       candidate_ = wanted;
       since_ = atMs;

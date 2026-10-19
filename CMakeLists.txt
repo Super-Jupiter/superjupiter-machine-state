@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(SuperJupiterMachineState VERSION 0.1.0 LANGUAGES CXX)
+project(SuperJupiterMachineState VERSION 0.1.1 LANGUAGES CXX)
 
 set(_superjupiter_machine_state_top_level OFF)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -19,6 +19,9 @@ target_compile_features(SuperJupiterMachineState INTERFACE cxx_std_11)
 
 if(SUPERJUPITER_MACHINE_STATE_BUILD_TESTS)
   enable_testing()
+  add_executable(superjupiter-machine-state-review tests/review_regressions.cpp)
+  target_link_libraries(superjupiter-machine-state-review PRIVATE SuperJupiter::MachineState)
+  add_test(NAME superjupiter-machine-state-review COMMAND superjupiter-machine-state-review)
   add_executable(superjupiter-machine-state-tests tests/test.cpp)
   target_link_libraries(superjupiter-machine-state-tests PRIVATE SuperJupiter::MachineState)
   add_test(NAME superjupiter-machine-state-tests COMMAND superjupiter-machine-state-tests)
