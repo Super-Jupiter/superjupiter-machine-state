@@ -1,4 +1,5 @@
 #include <SuperJupiterMachineState.h>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <new>
